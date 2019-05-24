@@ -6,6 +6,7 @@ import android.view.View;
 import androidx.annotation.IdRes;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -13,7 +14,6 @@ import com.mmyh.arthur.ArthurAdapter;
 import com.mmyh.arthur.OnLoadMoreListener;
 import com.mmyh.arthur.OnRefreshListener;
 
-import java.lang.reflect.Field;
 
 public class ListController {
 
@@ -48,28 +48,18 @@ public class ListController {
         listController.activity = activity;
         if (activity instanceof IQueryList) {
             listController.iQueryList = (IQueryList) activity;
+            listController.recyclerView = listController.iQueryList.getRecyclerView();
+            listController.adapter = listController.iQueryList.getArthurAdapter();
+            listController.request = listController.iQueryList.getListRequest();
         } else {
             throw new RuntimeException(activity.getClass().getName() + " must implements IQueryList");
         }
-        Field[] fields = activity.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            try {
-                Object object = field.get(activity);
-                if (object instanceof RecyclerView) {
-                    listController.recyclerView = (RecyclerView) object;
-                }
-                if (object instanceof ArthurAdapter) {
-                    listController.adapter = (ArthurAdapter) object;
-                }
-                if (object instanceof IListRequest) {
-                    listController.request = (IListRequest) object;
-                }
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
         listController.init();
         return listController;
+    }
+
+    public static ListController create(Fragment fragment) {
+        return create(fragment.getActivity());
     }
 
     private ListController() {
@@ -190,10 +180,10 @@ public class ListController {
                             if (!response.hasNextPage()) {
                                 adapter.setOnLoadMoreListener(null);
                                 if (adapter.getDataCount() > 0) {
-                                    adapter.getFootView(activity).setVisibility(View.VISIBLE);
+                                    adapter.showFootView();
                                 }
                             } else {
-                                adapter.getFootView(activity).setVisibility(View.GONE);
+                                adapter.hideFootView();
                             }
                             if (QueryListType.Init.equals(queryListType) || QueryListType.Refresh.equals(queryListType)) {
                                 if (enableLoadMore) {
@@ -223,7 +213,7 @@ public class ListController {
             } else if (footView instanceof Integer) {
                 adapter.addFootView(activity.getLayoutInflater().inflate((Integer) footView, adapter.getFootView(activity), false));
             }
-            adapter.getFootView(activity).setVisibility(View.GONE);
+            adapter.hideFootView();
         }
         if (netOffViewId != 0) {
             netOffView = activity.getLayoutInflater().inflate(netOffViewId, null);

@@ -25,6 +25,6 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     compileOnly 'androidx.appcompat:appcompat:1.0.2'
-    compileOnly 'com.mmyh.arthur:arthuradapter:1.1.4'
+    compileOnly 'com.mmyh.arthur:arthuradapter:1.1.6'
     compileOnly 'androidx.recyclerview:recyclerview:1.0.0'
 }

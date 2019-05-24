@@ -17,6 +17,7 @@ import com.mmyh.arthur.ArthurAdapter;
 import com.mmyh.arthur.ArthurViewHolder;
 import com.mmyh.arthur.OnLoadMoreListener;
 import com.mmyh.arthur.OnRefreshListener;
+import com.mmyh.listcontroller.IListRequest;
 import com.mmyh.listcontroller.IQueryList;
 import com.mmyh.listcontroller.IQueryListCallback;
 import com.mmyh.listcontroller.ListController;
@@ -27,8 +28,6 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements IQueryList {
 
-    RecyclerView mRecyclerView;
-
     MyAdapter mAdapter;
 
     ProductsRequest request;
@@ -37,15 +36,28 @@ public class MainActivity extends AppCompatActivity implements IQueryList {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        mRecyclerView = findViewById(R.id.recyclerview);
-        mRecyclerView.addItemDecoration(new SimplePaddingDecoration(this));
-        mAdapter = new MyAdapter();
-        mAdapter.setEmptyView(getLayoutInflater().inflate(R.layout.activity_main_emptyview, null), false);
-        request = new ProductsRequest(mAdapter);
-
         ListController.create(this)
                 .start();
+    }
+
+    @Override
+    public RecyclerView getRecyclerView() {
+        RecyclerView recyclerView = findViewById(R.id.recyclerview);
+        recyclerView.addItemDecoration(new SimplePaddingDecoration(this));
+        return recyclerView;
+    }
+
+    @Override
+    public ArthurAdapter getArthurAdapter() {
+        mAdapter = new MyAdapter();
+        mAdapter.setEmptyView(getLayoutInflater().inflate(R.layout.activity_main_emptyview, null), false);
+        return mAdapter;
+    }
+
+    @Override
+    public IListRequest getListRequest() {
+        request = new ProductsRequest(mAdapter);
+        return request;
     }
 
     @Override
