@@ -59,7 +59,18 @@ public class ListController {
     }
 
     public static ListController create(Fragment fragment) {
-        return create(fragment.getActivity());
+        ListController listController = new ListController();
+        listController.activity = fragment.getActivity();
+        if (fragment instanceof IQueryList) {
+            listController.iQueryList = (IQueryList) fragment;
+            listController.recyclerView = listController.iQueryList.getRecyclerView();
+            listController.adapter = listController.iQueryList.getArthurAdapter();
+            listController.request = listController.iQueryList.getListRequest();
+        } else {
+            throw new RuntimeException(fragment.getClass().getName() + " must implements IQueryList");
+        }
+        listController.init();
+        return listController;
     }
 
     private ListController() {
@@ -177,6 +188,11 @@ public class ListController {
                         dismissNetOffView();
                         if (response.isSuccess()) {
                             adapter.updateData(response.getDataList(), QueryListType.LoadMore.equals(queryListType));
+                            if (QueryListType.Init.equals(queryListType) || QueryListType.Refresh.equals(queryListType)) {
+                                if (enableLoadMore) {
+                                    enableLoadMore();
+                                }
+                            }
                             if (!response.hasNextPage()) {
                                 adapter.setOnLoadMoreListener(null);
                                 if (adapter.getDataCount() > 0) {
@@ -184,11 +200,6 @@ public class ListController {
                                 }
                             } else {
                                 adapter.hideFootView();
-                            }
-                            if (QueryListType.Init.equals(queryListType) || QueryListType.Refresh.equals(queryListType)) {
-                                if (enableLoadMore) {
-                                    enableLoadMore();
-                                }
                             }
                         }
                     }
@@ -236,7 +247,7 @@ public class ListController {
             netErrorView.setVisibility(View.GONE);
         }
         enablePullRefresh();
-        enableLoadMore();
+        //enableLoadMore();
     }
 
 
