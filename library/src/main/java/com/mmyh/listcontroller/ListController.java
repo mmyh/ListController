@@ -27,13 +27,15 @@ public class ListController {
 
     IListRequest request;
 
-    private boolean enableLoadMore = true;
-
     private QueryListType lastQueryListType;
 
     private View netOffView;
 
     private View netErrorView;
+
+    private boolean canRefresh = true;
+
+    private boolean canLoadMore = true;
 
     private static int netOffViewId;
 
@@ -86,36 +88,50 @@ public class ListController {
         netErrorViewRetryViewId = retryViewId;
     }
 
-    public ListController enablePullRefresh() {
+    public ListController togglePullRefresh(boolean canRefresh) {
+        this.canRefresh = canRefresh;
+        if (canRefresh) {
+            enablePullRefresh();
+        } else {
+            disbalePullRefresh();
+        }
+        return this;
+    }
+
+    public ListController toggleLoadMore(boolean canLoadMore) {
+        this.canLoadMore = canLoadMore;
+        if (canLoadMore) {
+            enableLoadMore();
+        } else {
+            disbaleLoadMore();
+        }
+        return this;
+    }
+
+    private void enablePullRefresh() {
         adapter.setOnRefreshListener(new OnRefreshListener() {
             @Override
             public void onRefresh() {
                 query(QueryListType.Refresh);
             }
         });
-        return this;
     }
 
-    public ListController disbalePullRefresh() {
+    private void disbalePullRefresh() {
         adapter.setOnRefreshListener(null);
-        return this;
     }
 
-    public ListController enableLoadMore() {
-        enableLoadMore = true;
+    private void enableLoadMore() {
         adapter.setOnLoadMoreListener(new OnLoadMoreListener() {
             @Override
             public void onLoadMore() {
                 query(QueryListType.LoadMore);
             }
         });
-        return this;
     }
 
-    public ListController disbaleLoadMore() {
-        enableLoadMore = false;
+    private void disbaleLoadMore() {
         adapter.setOnLoadMoreListener(null);
-        return this;
     }
 
     public void start() {
@@ -162,6 +178,24 @@ public class ListController {
         }
     }
 
+    public boolean handlerError(AbstractListErrorRule rule) {
+        if (rule.isNetOff(activity)) {
+            showNetOffView();
+            disbalePullRefresh();
+            disbaleLoadMore();
+            return true;
+        } else if (rule.isNetError()) {
+            disbalePullRefresh();
+            disbaleLoadMore();
+            showNetErrorView();
+            return true;
+        }
+        if (canRefresh) {
+            enablePullRefresh();
+        }
+        return false;
+    }
+
     private void query(final QueryListType queryListType) {
         lastQueryListType = queryListType;
         if (QueryListType.Init.equals(queryListType) || QueryListType.Refresh.equals(queryListType)) {
@@ -179,22 +213,18 @@ public class ListController {
                 public void onFinishQuery(IListResponse response, AbstractListErrorRule rule) {
                     adapter.finishRefresh();
                     adapter.finishLoadMore();
-                    if (rule.isNetOff(activity)) {
-                        showNetOffView();
-                    } else if (rule.isNetError()) {
-                        showNetErrorView();
-                    } else {
+                    if (!handlerError(rule)) {
                         dismissNetErrorView();
                         dismissNetOffView();
                         if (response.isSuccess()) {
                             adapter.updateData(response.getDataList(), QueryListType.LoadMore.equals(queryListType));
                             if (QueryListType.Init.equals(queryListType) || QueryListType.Refresh.equals(queryListType)) {
-                                if (enableLoadMore) {
+                                if (canLoadMore) {
                                     enableLoadMore();
                                 }
                             }
                             if (!response.hasNextPage()) {
-                                adapter.setOnLoadMoreListener(null);
+                                disbaleLoadMore();
                                 if (adapter.getDataCount() > 0) {
                                     adapter.showFootView();
                                 }
@@ -246,7 +276,9 @@ public class ListController {
             });
             netErrorView.setVisibility(View.GONE);
         }
-        enablePullRefresh();
+        if (canRefresh) {
+            enablePullRefresh();
+        }
         //enableLoadMore();
     }
 
