@@ -216,7 +216,7 @@ public class ListController {
                     if (!handlerError(rule)) {
                         dismissNetErrorView();
                         dismissNetOffView();
-                        if (response.isSuccess()) {
+                        if (response != null && response.isSuccess()) {
                             adapter.updateData(response.getDataList(), QueryListType.LoadMore.equals(queryListType));
                             if (QueryListType.Init.equals(queryListType) || QueryListType.Refresh.equals(queryListType)) {
                                 if (canLoadMore) {
